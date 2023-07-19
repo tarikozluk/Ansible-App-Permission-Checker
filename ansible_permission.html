@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ansible Remote Checker</title>
+  <title>Ansible Access Checker</title>
   <style>
     body {
       background-color: #222;
@@ -31,6 +31,9 @@
       background-color: #444;
       color: #fff;
     }
+    select {
+      background-color: #444 !important; /* Override select background */
+    }
     button {
       margin-top: 20px;
       background-color: #007bff;
@@ -42,68 +45,121 @@
     button:hover {
       background-color: #0056b3;
     }
+    /* New styles for the message box */
+    .message-box {
+      background-color: #00CED1;
+      color: #000;
+      padding: 15px;
+      text-align: center;
+      border-radius: 4px;
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Ansible Remote Checker</h2>
-    <form id="apiForm">
-      <label for="serverName">Source Server Name:</label>
-      <select id="serverName" name="serverName" required>
-        <option value="" selected disabled>Select a server</option>
-        <option value="server1">Server 1</option>
-        <option value="server2">Server 2</option>
-        <option value="server3">Server 3</option>
-      </select>
+<div class="container">
+  <h2>API Data Submission</h2>
+  <form id="apiForm">
+    <label for="serverName">Source Server Name:</label>
+    <select id="serverName" name="serverName" required>
+      <option value="" selected disabled>Select a server</option>
+      <!-- Server options will be populated dynamically via JavaScript -->
+    </select>
 
-      <label for="ipAddress">Target IP Address:</label>
-      <input type="text" id="ipAddress" name="ipAddress" required>
+    <label for="ipAddress">Target IP Address:</label>
+    <input type="text" id="ipAddress" name="ipAddress" required>
 
-      <label for="port">Target Port:</label>
-      <input type="text" id="port" name="port" required>
+    <label for="port">Target Port:</label>
+    <input type="text" id="port" name="port" required>
 
-      <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required>
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
 
-      <button type="submit">Get Result</button>
-    </form>
+    <button type="submit">Get Result</button>
+  </form>
+
+  <!-- Message box for the submission result -->
+  <div class="message-box" id="messageBox">
+    Request submitted, Wait for the E-mail to check the results
   </div>
+</div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('apiForm');
-      const apiUrl = 'http://localhost:5050/server=';
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('apiForm');
+    const apiUrl = 'http://localhost:5050/servers';
+    const messageBox = document.getElementById('messageBox');
 
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const serverName = document.getElementById('serverName').value;
-        const ipAddress = document.getElementById('ipAddress').value;
-        const port = document.getElementById('port').value;
-        const email = document.getElementById('email').value;
-        const apiEndpoint = apiUrl + serverName + '?ip=' + ipAddress + '&port=' + port + '&email=' + email;
+    // Function to fetch the server list and populate the dropdown select
+    const populateServers = () => {
+      fetch(apiUrl)
+              .then(response => response.json())
+              .then(data => {
+                const serverSelect = document.getElementById('serverName');
 
-        // You can perform an API call here using the 'apiEndpoint'
-        // For example, you can use 'fetch' to send data to the API.
-        // Fetch example:
-        /*
-        fetch(apiEndpoint, {
-          method: 'POST', // or 'GET', 'PUT', 'DELETE', etc. depending on your API requirements
-          // Additional headers or body if required
-        })
-        .then(response => response.json())
-        .then(data => {
-          // Handle the API response here if needed
-          console.log(data);
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-        */
+                // Clear existing options
+                serverSelect.innerHTML = '';
 
-        // For this example, let's just display the API endpoint for demonstration purposes.
-        alert('API Endpoint:\n' + apiEndpoint);
+                // Add a default disabled option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select a server';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                serverSelect.appendChild(defaultOption);
+
+                // Add options for each server
+                data.forEach(server => {
+                  const option = document.createElement('option');
+                  option.value = server.name; // Use the 'name' property of the 'server' object
+                  option.textContent = server.name; // Use the 'name' property as the display text
+                  serverSelect.appendChild(option);
+                });
+              })
+              .catch(error => {
+                console.error('Error fetching server list:', error);
+              });
+    };
+
+    // Populate server options when the "Select a server" dropdown is focused
+    const serverSelect = document.getElementById('serverName');
+    serverSelect.addEventListener('focus', populateServers);
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const serverName = document.getElementById('serverName').value;
+      const ipAddress = document.getElementById('ipAddress').value;
+      const port = document.getElementById('port').value;
+      const email = document.getElementById('email').value;
+      const apiEndpoint = 'http://localhost:5050/server=' + serverName + '?ip=' + ipAddress + '&port=' + port + '&email=' + email;
+
+      // Show the message box
+      messageBox.style.display = 'block';
+
+      // Hide the message box after 3 seconds (3000 milliseconds)
+      setTimeout(() => {
+        messageBox.style.display = 'none';
+      }, 3000);
+
+      // You can perform an API call here using the 'apiEndpoint'
+      // For example, you can use 'fetch' to send data to the API.
+      // Fetch example:
+      /*
+      fetch(apiEndpoint, {
+        method: 'POST', // or 'GET', 'PUT', 'DELETE', etc. depending on your API requirements
+        // Additional headers or body if required
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Handle the API response here if needed
+        console.log(data);
+      })
+      .catch(error => {
+        console.error('Error:', error);
       });
+      */
     });
-  </script>
+  });
+</script>
 </body>
 </html>
