@@ -1,12 +1,18 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.8-slim-buster
+FROM golang:1.19
 
-WORKDIR /python-docker
+WORKDIR /app
 
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY . .
+COPY *.go ./
 
-CMD [ "python", "-m" , "flask", "run", "--host=0.0.0.0"]
+RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-go-ansible
+
+
+EXPOSE 8080
+
+# Run
+CMD ["/docker-go-ansible"]
